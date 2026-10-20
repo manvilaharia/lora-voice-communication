@@ -25,6 +25,8 @@ The current prototype demonstrates the transmission of button status and microph
 - Breadboard and jumper wires
 
 ## System Design
+<img width="895" height="500" alt="image" src="https://github.com/user-attachments/assets/8c4de244-58a6-4ab4-a614-964d1bc67064" />
+
 
 ### Transmitter
 
@@ -76,6 +78,10 @@ This demonstrates basic packet transmission and reception over the LoRa link. Co
 The project presentation documents the hardware prototype and its communication workflow. The implemented code provides a mechanism for transmitting button status and microphone readings to the receiver.
 
 Actual audio quality and communication range should be measured separately before making claims about voice quality or kilometer-scale performance.
+<img width="457" height="256" alt="image" src="https://github.com/user-attachments/assets/b396cc7d-b117-480e-bfcb-8793e0f0e1d6" />
+<img width="452" height="251" alt="image" src="https://github.com/user-attachments/assets/ac5a6d0f-c760-41c1-bbd5-c4a85ece0e64" />
+
+
 
 ## Applications
 
