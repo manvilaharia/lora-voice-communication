@@ -1,93 +1,94 @@
-# Long-Range Wireless Voice Communication using LoRa
+# Long-Range Wireless Voice Communication Using LoRa
 
-A long-range, low-power voice communication prototype built with two **ESP32** boards and **LoRa SX1278** (433 MHz) modules. It targets places where cellular networks and the internet are unavailable: rural areas, disaster zones, defense and rescue operations, mining and industrial sites, and outdoor expeditions.
+A long-range wireless communication prototype built using two ESP32 boards and SX1278 LoRa modules operating at 433 MHz. The project explores communication in rural areas, disaster zones and remote locations where cellular networks or internet connectivity may be unavailable.
 
 ## Overview
 
-LoRa uses Chirp Spread Spectrum (CSS) modulation, giving kilometer-scale range at very low power and strong noise resistance. Wi-Fi and Bluetooth are short-range and power-hungry; LoRa trades data rate (0.3-50 kbit/s per channel) for range.
+LoRa uses Chirp Spread Spectrum modulation to support long-range wireless communication at low data rates and low power consumption. This project uses ESP32 microcontrollers and SX1278 transceivers to establish a wireless link between a transmitter and receiver.
 
-Key parameters:
-- **Spreading Factor (SF 7-12):** higher SF gives longer range but a slower data rate.
-- **Bandwidth (BW):** wider BW gives a faster data rate but shorter range.
-- **Band used:** 433 MHz (SX1278).
+The current prototype demonstrates the transmission of button status and microphone readings. Actual audio streaming and playback are planned future extensions.
 
 ## Objectives
 
-- Build a voice communication system using LoRa that works over long distances where other communication is unavailable.
-- Minimize transmission delay so conversations feel natural and real-time.
-- Keep the design power-efficient and low-cost for remote, off-grid operation.
+- Develop a low-cost wireless communication prototype using LoRa.
+- Transmit microphone readings and control information between two ESP32 boards.
+- Receive transmitted packets and indicate button status using an LED.
+- Explore the potential for long-range communication without cellular or internet connectivity.
 
 ## Hardware
 
-- 2x ESP32 development boards
-- 2x LoRa SX1278 modules (RA-02)
+- Two ESP32 development boards
+- Two SX1278 LoRa modules
 - MAX9814 microphone module
 - Push button
-- LEDs and resistors (10k, 330 ohm)
+- LED and resistors
 - Breadboard and jumper wires
 
-## System Flow
+## System Design
 
-**Transmitter**
-1. Pressing the push button enables the microphone, which converts voice into an analog signal.
-2. The ESP32 ADC samples the analog signal into digital values.
-3. The ESP32 processes the samples (filtering, optional compression) and packetizes them.
-4. Packets go to the LoRa module over SPI.
-5. The SX1278 modulates the data using LoRa CSS and transmits it via the antenna.
+### Transmitter
 
-**Receiver**
-1. The antenna captures the signal and the SX1278 demodulates it into data packets.
-2. The ESP32 reads packets over SPI (MISO, MOSI, SCK, NSS) using `LoRa.parsePacket()`.
-3. The ESP32 reassembles the audio data (with optional decompression, filtering, or error correction).
-4. Data is sent to a DAC to convert back to analog (planned extension).
-5. A status LED indicates successful reception.
+The transmitter reads the microphone's analog output through the ESP32 ADC and monitors the push button. When the button is pressed and the microphone reading exceeds a configured threshold, the transmitter sends a `BTN ON` message and the microphone reading. Otherwise, it sends a `BTN OFF` message and the reading.
+
+The ESP32 communicates with the LoRa module through SPI, and the SX1278 transmits the packet wirelessly.
+
+### Receiver
+
+The receiver listens for incoming LoRa packets and reads their contents. It checks the button status and switches the LED accordingly. The receiver also extracts the transmitted microphone reading and displays it through the Serial Monitor.
+
+The current implementation does not reconstruct audio or play it through a speaker.
 
 ## Pin Connections
 
-| Signal | ESP32 Pin |
+| Signal | ESP32 GPIO |
 |---|---|
-| LoRa NSS / CS | 5 |
-| LoRa RST | 14 |
+| LoRa CS / NSS | 5 |
+| LoRa Reset | 14 |
 | LoRa DIO0 | 2 |
-| LoRa MOSI / MISO / SCK | 23 / 19 / 18 (default VSPI) |
-| Microphone (analog) | 32 |
-| Push button | 35 (transmitter) |
-| Status LED | 22 (receiver) |
+| LoRa MOSI | 23 |
+| LoRa MISO | 19 |
+| LoRa SCK | 18 |
+| Microphone analog output | 32 |
+| Push button in transmitter code | 35 |
+| Status LED in receiver code | 22 |
 
-> **Note:** the schematic in the presentation shows the button wired to GPIO 33, while the code uses GPIO 35. GPIO 35 is input-only and has no internal pull-up, so `INPUT_PULLUP` will not work on it; use an external pull-up (the schematic's 10k resistor) or move the button to a pin that supports internal pull-ups. Make the schematic and code agree before building.
+The presentation schematic shows the push button connected to GPIO 33, while the transmitter code uses GPIO 35. On a classic ESP32, GPIO 35 is input-only and does not support an internal pull-up. The wiring and code should be reconciled before hardware deployment. An external pull-up or a suitable GPIO supporting internal pull-ups is required.
 
 ## Software
 
-Both sketches use the Arduino framework with the [arduino-LoRa](https://github.com/sandeepmistry/arduino-LoRa) library.
+Both transmitter and receiver sketches use the Arduino framework and the [LoRa library by Sandeep Mistry](https://github.com/sandeepmistry/arduino-LoRa).
 
-1. Install the Arduino IDE and add ESP32 board support.
-2. Install the **LoRa** library by Sandeep Mistry (Library Manager).
-3. Open `transmitter/transmitter.ino` and upload to the transmitter ESP32.
-4. Open `receiver/receiver.ino` and upload to the receiver ESP32.
-5. Open the Serial Monitor at 9600 baud. Tune `micThreshold` in the transmitter based on the mic values you observe.
+1. Install the Arduino IDE and ESP32 board support.
+2. Install the LoRa library through the Arduino Library Manager.
+3. Upload `transmitter/transmitter.ino` to the transmitter ESP32.
+4. Upload `receiver/receiver.ino` to the receiver ESP32.
+5. Open the Serial Monitor at 9600 baud to observe transmitted and received messages.
+6. Adjust the microphone threshold based on observed ADC readings if required.
 
-## Current Behavior
+## Current Implementation
 
-The prototype sends `BTN ON,<micValue>` when the button is pressed and the mic level exceeds the threshold, otherwise `BTN OFF,<micValue>`. The receiver lights the LED on `BTN ON` and parses the mic value. This validates the LoRa link and the capture/transmit/receive chain; full audio streaming is the next step.
+The transmitter sends button status and microphone ADC readings as LoRa packets. The receiver parses the packets, extracts the microphone reading and controls an LED according to the received button status.
+
+This demonstrates basic packet transmission and reception over the LoRa link. Continuous voice transmission, audio decoding and speaker playback have not been implemented in the current code.
 
 ## Results
 
-Voice-activity and mic-level data were transmitted successfully over LoRa and indicated on the receiver LED. See the `docs/` folder for the project presentation and photos.
+The project presentation documents the hardware prototype and its communication workflow. The implemented code provides a mechanism for transmitting button status and microphone readings to the receiver.
+
+Actual audio quality and communication range should be measured separately before making claims about voice quality or kilometer-scale performance.
 
 ## Applications
 
-- Emergency communication during disasters and network outages
+- Emergency communication during network outages
 - Rural and remote connectivity
-- Defense, security, and rescue operations
-- Industrial and mining areas without Wi-Fi or mobile signal
-- Outdoor expeditions (trekking, camping, marine)
-- Smart city and IoT integration
+- Rescue and field operations
+- Industrial and mining environments
+- Outdoor expeditions
 
 ## Future Work
 
-- Stream actual audio samples with compression (e.g., ADPCM) over LoRa packets
-- Audio reconstruction using a DAC, amplifier, and speaker
-- Two-way and group communication
-- Range testing across SF/BW settings
-
-\
+- Transmit sampled audio data rather than individual microphone readings
+- Explore audio encoding and compression
+- Reconstruct audio using a DAC, amplifier and speaker
+- Develop two-way communication
+- Measure communication range, latency and reliability under different LoRa settings
